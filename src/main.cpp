@@ -73,55 +73,14 @@ void start_server(){
       close(new_socket);
     }
   }
-
 }
 
 
 void start_client(){
 
-  auto net_f = NetworkFlags();
-  int sock = 0;
+  auto clientHandler = ClientNetworkHandler();
 
-  long valread;
-
-  struct sockaddr_in serv_addr;
-  
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-      std::cerr << "Socket creation error\n";
-      return;
-  }
-
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(8090);
-
-  if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-      std::cerr << "Invalid address\n";
-      return;
-  }
-
-  if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-      perror("Connection failed");
-      return;
-  }
-
-  const size_t data_len = sizeof(net_f.up_packet);
-
-  send(sock, net_f.up_packet, data_len, 0);
-
-  unsigned char buff[5] = {0};
-
-  valread = read(sock, buff, 5);
-
-  // client
-  if(valread > 0){
-    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == net_f.VERSION) {
-      std::cout << "Intro Packet Read\n";
-    }
-    else {
-      std::cout << "Intro Packet Failed\n";
-    }
-  }
-  close(sock);
+  clientHandler.init_handshake();
 
   FileProccessor fp = FileProccessor();
   fp.init_f_scan();

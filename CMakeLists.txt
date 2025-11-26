@@ -9,6 +9,7 @@ set(APP_SOURCES
   src/main.cpp 
   src/file.cpp
   src/network.cpp
+  src/packet.cpp
 )
 
 add_executable(${PROJECT_NAME} ${APP_SOURCES})
