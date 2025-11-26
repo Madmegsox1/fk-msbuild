@@ -10,12 +10,12 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-
-
-const static unsigned char VERSION = 100;
+#include "file.h"
+#include "network.h"
 
 
 void start_server(){
+  auto net_f = NetworkFlags();
   int server_fd, new_socket;
   long valread;
   struct sockaddr_in address;
@@ -55,22 +55,17 @@ void start_server(){
   }
 
   
-  
-  unsigned char up_packet[] = {
-    0xAA, 0x55, 0x00,
-    0xFF, VERSION
-  };
-
-  const size_t data_len = sizeof(up_packet);
+  const size_t data_len = sizeof(net_f.up_packet);
 
   unsigned char buff[5] = {0};
 
   valread = read(new_socket, buff, 5);
 
+  // Server
   if(valread > 0) {
-    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == VERSION) {
+    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == net_f.VERSION) {
       std::cout << "Intro Packet Read \n";
-      send(new_socket, up_packet, data_len, 0);
+      send(new_socket, net_f.up_packet, data_len, 0);
       close(new_socket);
     }
     else {
@@ -78,11 +73,13 @@ void start_server(){
       close(new_socket);
     }
   }
+
 }
 
 
 void start_client(){
 
+  auto net_f = NetworkFlags();
   int sock = 0;
 
   long valread;
@@ -107,21 +104,17 @@ void start_client(){
       return;
   }
 
-  unsigned char up_packet[] = {
-    0xAA, 0x55, 0x00,
-    0xFF, VERSION
-  };
+  const size_t data_len = sizeof(net_f.up_packet);
 
-  const size_t data_len = sizeof(up_packet);
-
-  send(sock, up_packet, data_len, 0);
+  send(sock, net_f.up_packet, data_len, 0);
 
   unsigned char buff[5] = {0};
 
   valread = read(sock, buff, 5);
 
+  // client
   if(valread > 0){
-    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == VERSION) {
+    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == net_f.VERSION) {
       std::cout << "Intro Packet Read\n";
     }
     else {
@@ -129,6 +122,10 @@ void start_client(){
     }
   }
   close(sock);
+
+  FileProccessor fp = FileProccessor();
+  fp.init_f_scan();
+  
 }
 
 
@@ -139,10 +136,9 @@ void start_client(){
 
 
 
-bool server_flag = false;
-bool client_flag = false;
 
 int main(int argc, char **argv){
+  auto net_f = NetworkFlags();
   std::cout << "Fk_msbuild remote build util\n";
 
   if(argc < 2){
@@ -155,11 +151,11 @@ int main(int argc, char **argv){
   }
 
   if(strcmp("-c", argv[1]) == 0){
-    client_flag = true;
+    net_f.client_flag = true;
   }
 
   if(strcmp("-s", argv[1]) == 0){
-    server_flag = true;
+    net_f.server_flag = true;
   }
 
   if(!std::filesystem::exists("./fk_msbuild.cfg")){
@@ -177,11 +173,11 @@ int main(int argc, char **argv){
 
   configFile.close();
 
-  if(server_flag) {
+  if(net_f.server_flag) {
     start_server();
   }
 
-  if(client_flag){
+  if(net_f.client_flag){
     start_client();
   }
 

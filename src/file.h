@@ -8,6 +8,7 @@
 #include <string>
 #include <iomanip>
 #include <cstdint>
+#include <vector>
 
 constexpr uint64_t FNV_PRIME = 1099511628211ULL;
 constexpr uint64_t FNV_OFFSET_BASIS = 14695981039346656037ULL;
@@ -15,15 +16,19 @@ constexpr int BUFFER_SIZE = 4096;
 
 
 struct File {
-  std::string& file_name;
+  std::string file_name;
   std::string local_path;
 
   uint64_t hash;
 
-  bool check_hash(File file){
-    return hash == file.hash;
+  /// @return if the file has changed then this will return false 
+  bool file_change() {
+    uint64_t n_hash = calc_fnv1a_64_file();
+    return n_hash != hash;
   }
 
+
+  /// @return the hash of the current file path
   uint64_t calc_fnv1a_64_file(){
     std::ifstream fileStream(local_path, std::ios::binary);
     if (!fileStream.is_open()) {
@@ -44,8 +49,17 @@ struct File {
 
     return hash;
   }
+};
 
-  
+
+class FileProccessor{
+  std::vector<File> files;
+
+  public:
+    void init_f_scan();
+    std::vector<File> f_diff();
+
+  private:
 };
 
 #endif

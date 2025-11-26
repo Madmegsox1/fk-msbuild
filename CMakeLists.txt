@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(APP_SOURCES
   src/main.cpp 
+  src/file.cpp
+  src/network.cpp
 )
 
 add_executable(${PROJECT_NAME} ${APP_SOURCES})
