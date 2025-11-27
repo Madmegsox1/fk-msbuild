@@ -58,3 +58,79 @@ void ClientNetworkHandler::init_handshake(){
   }
   
 }
+
+
+void ServerNetworkHandler::init() {
+  if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+    perror("Socket creation failed");
+    return;
+  }
+
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(8090);
+
+  int opt = 1;
+
+  if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
+    throw std::runtime_error("setsockopt failed");
+  }
+
+  if(bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0){
+    throw std::runtime_error("Bind Failed");
+  }
+
+  if(listen(server_fd, 16) < 0){
+    throw std::runtime_error("Listen Failed");
+  }
+
+  std::cout << "Server Started on port 8090...\n";
+
+
+}
+
+void ServerNetworkHandler::s_loop() {
+  register_packets();
+  flags.handshake_flag = false;
+
+  while(true) {
+    if ((sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0){
+      perror("Failed to Accept clients");
+      return;
+    }
+
+    unsigned char buff[1] = {0};
+    val_read = read(sock, buff, 1);
+
+    if(val_read != 1) {
+      std::cerr << "Failed to get packet opcode";
+      return;
+    }
+
+    auto opcode = buff[0];
+
+    C_handshake handshake_pk = C_handshake();
+
+    for (auto packet : packet_register) {
+      if(opcode == packet.opcode){
+        if(opcode == handshake_pk.opcode && !flags.handshake_flag){
+          flags.handshake_flag = true;
+        }
+        else if(opcode == handshake_pk.opcode && flags.handshake_flag) {
+          std::cerr << "Handshake already completed";
+          return;
+        }
+        packet.recive(sock);
+        packet.send(sock);
+      }
+    }
+  }
+}
+
+void ServerNetworkHandler::register_packets(){
+  // Request checksums of files from host
+  packet_register.push_back(C_checksum_lst());
+
+  // Handshake packet to check server version
+  packet_register.push_back(C_handshake());
+}
