@@ -9,6 +9,7 @@
 
 bool NetworkFlags::client_flag = false;
 bool NetworkFlags::server_flag = false;
+bool NetworkFlags::handshake_flag = false;
 unsigned char NetworkFlags::VERSION = 100;
 
 unsigned char NetworkFlags::up_packet[5] = { 
@@ -18,6 +19,7 @@ unsigned char NetworkFlags::up_packet[5] = {
 
 
 void ClientNetworkHandler::init_handshake(){
+  flags.handshake_flag = false;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     throw std::runtime_error("Failed to create socket");
   }
@@ -33,30 +35,9 @@ void ClientNetworkHandler::init_handshake(){
       throw std::runtime_error("Connection failed");
   }
 
-  const size_t data_len = sizeof(flags.up_packet);
-
-  send(sock, flags.up_packet, data_len, 0);
-
-  unsigned char buff[5] = {0};
-
-  val_read = read(sock, buff, 5);
-
-  
-  if(val_read > 0 && val_read == 5){
-    if((buff[0] | buff[1]) == 0xFF && (buff[2] & buff[3]) == 0x00 && buff[4] == flags.VERSION) {
-      std::cout << "Server Handshake\n";
-    }
-    else {
-      std::cerr << "Server Handshake Failed\n";
-      if(buff[4] != flags.VERSION){
-        std::cerr << "WRONG SERVER VERSION (CLIENT) v" << flags.VERSION << " (SERVER) v" << buff[4];
-      }
-    }
-  }
-  else {
-    throw std::runtime_error("Unexpected Value recived");
-  }
-  
+  auto handshake = C_handshake();
+  handshake.send_p(sock);
+  handshake.recive(sock);
 }
 
 
@@ -85,8 +66,6 @@ void ServerNetworkHandler::init() {
   }
 
   std::cout << "Server Started on port 8090...\n";
-
-
 }
 
 void ServerNetworkHandler::s_loop() {
@@ -113,15 +92,12 @@ void ServerNetworkHandler::s_loop() {
 
     for (auto packet : packet_register) {
       if(opcode == packet.opcode){
-        if(opcode == handshake_pk.opcode && !flags.handshake_flag){
-          flags.handshake_flag = true;
-        }
-        else if(opcode == handshake_pk.opcode && flags.handshake_flag) {
+        if(opcode == handshake_pk.opcode && flags.handshake_flag) {
           std::cerr << "Handshake already completed";
           return;
         }
+        // i hate types fr
         packet.recive(sock);
-        packet.send(sock);
       }
     }
   }
@@ -129,8 +105,8 @@ void ServerNetworkHandler::s_loop() {
 
 void ServerNetworkHandler::register_packets(){
   // Request checksums of files from host
-  packet_register.push_back(C_checksum_lst());
+  packet_register.push_back(S_checksum_lst());
 
   // Handshake packet to check server version
-  packet_register.push_back(C_handshake());
+  packet_register.push_back(S_handshake());
 }
