@@ -1,5 +1,6 @@
 #include "packet.h"
 #include <alloca.h>
+#include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -16,10 +17,8 @@ std::vector<unsigned char> Packet::compile(){
   auto size = data.size();
 
   if(size > 0){
-    packet.push_back(static_cast<unsigned char>(size & 0xff));
-    packet.push_back(static_cast<unsigned char>((size >> 8) & 0xff));
-    packet.push_back(static_cast<unsigned char>((size >> 16) & 0xff));
-    packet.push_back(static_cast<unsigned char>((size >> 24) & 0xff));
+    auto encoded = encode_size(size);
+    packet.insert(packet.end(), encoded.begin(), encoded.end());
 
     for(auto b : data){
       packet.push_back(b);
@@ -53,6 +52,17 @@ size_t Packet::decode_size(int sock) {
   size_t len = static_cast<size_t>(((buff[3] & 0xff) << 24) | ((buff[2] & 0xff) << 16) | ((buff[1] & 0xff) << 8) | (buff[0] & 0xff));
 
   return len;
+}
+
+std::array<unsigned char, 4> Packet::encode_size(size_t size){
+  std::array<unsigned char, 4> i32 = {0};
+
+  i32[0] = static_cast<unsigned char>(size & 0xff);
+  i32[1] = static_cast<unsigned char>((size >> 8) & 0xff);
+  i32[2] = static_cast<unsigned char>((size >> 16) & 0xff);
+  i32[3] = static_cast<unsigned char>((size >> 24) & 0xff);
+
+  return i32;
 }
 
 
@@ -157,8 +167,13 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
 
   fp.init_f_scan();
   for(auto file : fp.files){
-    // insert length of the file name
+    auto file_name_len = encode_size(file.file_name.length());
+    data.insert(data.end(), file_name_len.begin(), file_name_len.end());
     data.insert(data.end(), file.file_name.begin(), file.file_name.end());
+
+    auto file_path_len = encode_size(file.local_path.length());
+    data.insert(data.end(), file_path_len.begin(), file_path_len.end());
+    data.insert(data.end(), file.local_path.begin(), file.local_path.end());
   }
   
 }

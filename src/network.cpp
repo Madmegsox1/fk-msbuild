@@ -51,7 +51,7 @@ void ServerNetworkHandler::init() {
 
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_port = htons(8090);
+  address.sin_port = htons(port);
 
   int opt = 1;
 

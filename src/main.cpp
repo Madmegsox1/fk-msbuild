@@ -1,6 +1,4 @@
 #include <asm-generic/socket.h>
-#include <cstddef>
-#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <string.h>
@@ -31,13 +29,6 @@ void start_client(){
   fp.init_f_scan();
   
 }
-
-
-
-
-
-
-
 
 
 

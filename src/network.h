@@ -40,7 +40,6 @@ class ClientNetworkHandler {
   const int port = 8090;
   const char *ip = "127.0.0.1";
   int sock = 0;
-  long val_read;
   struct sockaddr_in serv_addr;
   NetworkFlags flags = NetworkFlags();
   FileProccessor fProc = FileProccessor();

@@ -11,11 +11,19 @@ class Packet {
     unsigned char opcode;
     std::vector<unsigned char> data;
 
+    // @pram the socket to read 4 bytes from to decode the size value
+    // @return size type but max size is a 32bit int
+    // we aint going over 2 billion bytes so should be enough
     size_t decode_size(int sock);
+
+    // @return encoded 32bit int
+    std::array<unsigned char, 4> encode_size(size_t size);
+
     bool check_opcode(int sock);
     
+    virtual ~Packet(){}
     virtual std::vector<unsigned char> compile();
-    virtual void recive(int sock){std::cerr << "This Shouldnt be called";}
+    virtual void recive(int _){std::cerr << "This Shouldnt be called";}
     virtual void send_p(int sock);
 };
 

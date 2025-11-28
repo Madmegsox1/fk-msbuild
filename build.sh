@@ -92,3 +92,6 @@ elapsed=$(echo "$end - $start" | bc)
 
 echo "Build time: ${elapsed}s"
 echo "Finished!"
+
+mkdir -p build/server & mkdir -p build/client
+cp build/app build/server/app & cp build/app build/client/app
