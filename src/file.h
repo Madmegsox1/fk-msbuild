@@ -53,9 +53,9 @@ struct File {
 
 
 class FileProccessor{
-  std::vector<File> files;
 
   public:
+    std::vector<File> files;
     void init_f_scan();
     std::vector<File> f_diff();
 

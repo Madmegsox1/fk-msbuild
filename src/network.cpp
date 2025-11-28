@@ -1,9 +1,11 @@
 #include "network.h"
 #include <arpa/inet.h>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <utility>
 #include "packet.h"
 
 
@@ -90,14 +92,15 @@ void ServerNetworkHandler::s_loop() {
 
     C_handshake handshake_pk = C_handshake();
 
-    for (auto packet : packet_register) {
-      if(opcode == packet.opcode){
+    for (const auto& packet : packet_register) {
+      if(opcode == packet->opcode){
         if(opcode == handshake_pk.opcode && flags.handshake_flag) {
-          std::cerr << "Handshake already completed";
-          return;
+          std::cerr << "Handshake already completed\n";
+          close(sock);
+          continue;
         }
         // i hate types fr
-        packet.recive(sock);
+        packet->recive(sock);
       }
     }
   }
@@ -105,8 +108,10 @@ void ServerNetworkHandler::s_loop() {
 
 void ServerNetworkHandler::register_packets(){
   // Request checksums of files from host
-  packet_register.push_back(S_checksum_lst());
+  auto checksum_ptr = std::make_unique<S_checksum_lst>(fProc);
+  packet_register.push_back(std::move(checksum_ptr));
 
+  auto handshake_ptr = std::make_unique<S_handshake>();
   // Handshake packet to check server version
-  packet_register.push_back(S_handshake());
+  packet_register.push_back(std::move(handshake_ptr));
 }

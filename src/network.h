@@ -1,7 +1,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "file.h"
 #include "packet.h"
+#include <memory>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <vector>
@@ -23,8 +25,10 @@ class ServerNetworkHandler {
   struct sockaddr_in address;
   int addrlen = sizeof(address);
   NetworkFlags flags = NetworkFlags();
+  FileProccessor fProc = FileProccessor();
 
-  std::vector<Packet> packet_register;
+
+  std::vector<std::unique_ptr<Packet>> packet_register;
 
   public:
     void init();
@@ -39,6 +43,7 @@ class ClientNetworkHandler {
   long val_read;
   struct sockaddr_in serv_addr;
   NetworkFlags flags = NetworkFlags();
+  FileProccessor fProc = FileProccessor();
 
   public:
     void init_handshake();

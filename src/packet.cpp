@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
+#include "file.h"
 #include "network.h"
 
 std::vector<unsigned char> Packet::compile(){
@@ -54,10 +55,6 @@ size_t Packet::decode_size(int sock) {
   return len;
 }
 
-C_checksum_lst::C_checksum_lst(){
-  opcode = 0x0A;
-  data = std::vector<unsigned char>();
-}
 
 /// Server Handshake handler
 S_handshake::S_handshake(){
@@ -76,11 +73,15 @@ void S_handshake::recive(int sock){
   auto nf = NetworkFlags();
   size_t pk_len = decode_size(sock);
 
+  if(pk_len != 5){
+    throw std::runtime_error("Handshake packet was an unexpected size");
+  }
+
   unsigned char * buff = new unsigned char[pk_len];
 
-  read(sock, buff, pk_len);
+  long r = read(sock, buff, pk_len);
 
-  if(sizeof(buff) != 5){
+  if(r != 5){
     throw std::runtime_error("Handshake packet was an unexpected size");
   }
 
@@ -94,7 +95,7 @@ void S_handshake::recive(int sock){
   else {
     std::cerr << "Handshake packet failed verficiation";
     if(buff[4] != nf.VERSION){
-      std::cerr << "Server is on a diffrent version of fk_msbuild";
+      std::cerr << "Client is on a diffrent version of fk_msbuild";
     }
   }
 
@@ -126,9 +127,9 @@ void C_handshake::recive(int sock) {
 
   unsigned char * buff = new unsigned char[pk_len];
 
-  read(sock, buff, pk_len);
+  long r = read(sock, buff, pk_len);
 
-  if(sizeof(buff) != 5){
+  if(r != 5){
     throw std::runtime_error("Handshake packet was an unexpected size");
   }
 
@@ -147,6 +148,44 @@ void C_handshake::recive(int sock) {
   }
 
   delete [] buff;
+}
+
+C_checksum_lst::C_checksum_lst(FileProccessor fp){
+  opcode = 0x0A;
+  data = std::vector<unsigned char>();
+  this->fileProc = fp;
+
+  fp.init_f_scan();
+  for(auto file : fp.files){
+    // insert length of the file name
+    data.insert(data.end(), file.file_name.begin(), file.file_name.end());
+  }
+  
+}
+
+S_checksum_lst::S_checksum_lst(FileProccessor fp){
+  opcode = 0x0A;
+  data = std::vector<unsigned char>();
+  this->fileProc = fp;
+}
+
+void C_checksum_lst::recive(int sock){
+  auto nf = NetworkFlags::handshake_flag;
+
+  if(!nf) return;
+
+}
+
+
+void S_checksum_lst::recive(int sock){
+
+  auto nf = NetworkFlags::handshake_flag;
+
+  if(!nf) return;
+
+
+  
+  
 }
 
 
