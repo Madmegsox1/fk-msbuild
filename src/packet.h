@@ -19,6 +19,9 @@ class Packet {
     // @return encoded 32bit int
     std::array<unsigned char, 4> encode_size(size_t size);
 
+    // @return encoded 64bit int
+    std::array<unsigned char, 8> encode_u64(uint64_t value);
+
     bool check_opcode(int sock);
     
     virtual ~Packet(){}

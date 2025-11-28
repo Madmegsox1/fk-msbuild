@@ -6,7 +6,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
-#include <iomanip>
 #include <cstdint>
 #include <vector>
 

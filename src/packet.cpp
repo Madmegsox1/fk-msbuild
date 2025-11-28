@@ -2,6 +2,7 @@
 #include <alloca.h>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -57,12 +58,21 @@ size_t Packet::decode_size(int sock) {
 std::array<unsigned char, 4> Packet::encode_size(size_t size){
   std::array<unsigned char, 4> i32 = {0};
 
-  i32[0] = static_cast<unsigned char>(size & 0xff);
-  i32[1] = static_cast<unsigned char>((size >> 8) & 0xff);
-  i32[2] = static_cast<unsigned char>((size >> 16) & 0xff);
-  i32[3] = static_cast<unsigned char>((size >> 24) & 0xff);
+  for(int i = 0; i < 4; i++){
+    i32[i] = static_cast<unsigned char>((size >> (i * 8)) & 0xff);
+  }
 
   return i32;
+}
+
+std::array<unsigned char, 8> Packet::encode_u64(uint64_t value){
+  std::array<unsigned char, 8> i64 = {0};
+
+  for(int i = 0; i < 8; i++){
+    i64[i] = static_cast<unsigned char>((value >> (i * 8)) & 0xff);
+  }
+
+  return i64;
 }
 
 
@@ -174,6 +184,8 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
     auto file_path_len = encode_size(file.local_path.length());
     data.insert(data.end(), file_path_len.begin(), file_path_len.end());
     data.insert(data.end(), file.local_path.begin(), file.local_path.end());
+
+    // file hash
   }
   
 }
