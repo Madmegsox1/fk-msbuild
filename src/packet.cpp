@@ -54,6 +54,20 @@ size_t Packet::decode_size(int sock) {
 
   return len;
 }
+uint64_t Packet::decode_u64(int sock) {
+  unsigned char buff[8] = {0};
+  long r = read(sock, buff, 8);
+
+  if(r != 8) return 0;
+
+  uint64_t u64i = 0;
+
+  for(int i =0; i < 8; i++){
+    u64i |= static_cast<uint64_t>(buff[i] & 0xff) << (56-(i*8)); 
+  }
+
+  return u64i;
+}
 
 std::array<unsigned char, 4> Packet::encode_size(size_t size){
   std::array<unsigned char, 4> i32 = {0};
@@ -176,6 +190,10 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
   this->fileProc = fp;
 
   fp.init_f_scan();
+
+  auto file_len = encode_size(fp.files.size());
+  data.insert(data.end(), file_len.begin(), file_len.end());
+
   for(auto file : fp.files){
     auto file_name_len = encode_size(file.file_name.length());
     data.insert(data.end(), file_name_len.begin(), file_name_len.end());
@@ -185,9 +203,11 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
     data.insert(data.end(), file_path_len.begin(), file_path_len.end());
     data.insert(data.end(), file.local_path.begin(), file.local_path.end());
 
-    // file hash
+    auto checksum = encode_u64(file.hash);
+    data.insert(data.end(), checksum.begin(), checksum.end());
   }
-  
+
+  std::cout << "SIZE: " << data.size();
 }
 
 S_checksum_lst::S_checksum_lst(FileProccessor fp){
@@ -203,16 +223,36 @@ void C_checksum_lst::recive(int sock){
 
 }
 
-
+// Server executes this once C_checksum_lst is recived by server
 void S_checksum_lst::recive(int sock){
 
   auto nf = NetworkFlags::handshake_flag;
 
   if(!nf) return;
 
+  auto _= decode_size(sock);
 
-  
-  
+  auto num_files = decode_size(sock);
+  std::cout << num_files;
+
+  for(size_t i = 0; i < num_files; i++){
+    auto f_name_len = decode_size(sock);
+    if(f_name_len == 0) close(sock);
+    unsigned char * f_name = new unsigned char [f_name_len];
+
+    auto f_path_len = decode_size(sock);
+    if(f_path_len == 0)close (sock);
+    unsigned char * f_path = new unsigned char [f_name_len];
+
+    auto f_checksum = decode_u64(sock);
+
+    std::cout<<"File: " << i << " " << f_name << " " << f_path << " " << f_checksum;
+
+    delete [] f_path;
+    delete [] f_name;
+
+  }
+  close(sock);
 }
 
 

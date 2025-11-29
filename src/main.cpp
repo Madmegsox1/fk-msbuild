@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include "file.h"
 #include "network.h"
 
 
@@ -24,10 +23,6 @@ void start_client(){
   auto clientHandler = ClientNetworkHandler();
 
   clientHandler.init_handshake();
-
-  FileProccessor fp = FileProccessor();
-  fp.init_f_scan();
-  
 }
 
 

@@ -1,7 +1,6 @@
 #include "file.h"
 #include <vector>
 #include <filesystem>
-#include "network.h"
 
 void FileProccessor::init_f_scan() {
   files = std::vector<File>();
@@ -17,7 +16,7 @@ void FileProccessor::init_f_scan() {
       f.hash = f.calc_fnv1a_64_file();
       files.push_back(f);
 
-      //std::cout << i -> path().filename() << " | " << f.hash << "\n";
+      std::cout << i -> path().filename() << " | " << f.hash << "\n";
     }
   }
 }

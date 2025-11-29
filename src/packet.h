@@ -16,6 +16,10 @@ class Packet {
     // we aint going over 2 billion bytes so should be enough
     size_t decode_size(int sock);
 
+    // @pram the socker to read 8 bytes from to decode the int
+    // @return the u64 bit int
+    uint64_t decode_u64(int sock);
+
     // @return encoded 32bit int
     std::array<unsigned char, 4> encode_size(size_t size);
 

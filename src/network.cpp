@@ -1,4 +1,5 @@
 #include "network.h"
+#include "file.h"
 #include <arpa/inet.h>
 #include <iostream>
 #include <memory>
@@ -40,6 +41,9 @@ void ClientNetworkHandler::init_handshake(){
   auto handshake = C_handshake();
   handshake.send_p(sock);
   handshake.recive(sock);
+
+  auto checksum = C_checksum_lst(fProc);
+  checksum.send_p(sock);
 }
 
 
@@ -99,7 +103,7 @@ void ServerNetworkHandler::s_loop() {
           close(sock);
           continue;
         }
-        // i hate types fr
+        std::cout << "opcode: " << packet->opcode;
         packet->recive(sock);
       }
     }
