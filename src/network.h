@@ -46,7 +46,7 @@ class ClientNetworkHandler {
 
   public:
     void init_handshake();
-
+    void connect_socket();
   
 };
 

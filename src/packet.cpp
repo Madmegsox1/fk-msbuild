@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <print>
 #include <stdexcept>
+#include <string>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
@@ -62,9 +64,13 @@ uint64_t Packet::decode_u64(int sock) {
 
   uint64_t u64i = 0;
 
-  for(int i =0; i < 8; i++){
-    u64i |= static_cast<uint64_t>(buff[i] & 0xff) << (56-(i*8)); 
+  for(int i = 0; i < 8; i++){
+    u64i |= static_cast<uint64_t>(buff[i]) << (8*i);
   }
+
+//  uint64_t u64i = (static_cast<uint64_t>(buff[7] & 0xff) << 56) | (static_cast<uint64_t>(buff[6] & 0xff) << 48) | (static_cast<uint64_t>(buff[5] & 0xff) << 40) | (static_cast<uint64_t>(buff[4] & 0xff) << 32) |
+//                                       ((buff[3] & 0xff) << 24) | ((buff[2] & 0xff) << 16) | ((buff[1] & 0xff) << 8) | (buff[0] & 0xff);
+
 
   return u64i;
 }
@@ -83,7 +89,8 @@ std::array<unsigned char, 8> Packet::encode_u64(uint64_t value){
   std::array<unsigned char, 8> i64 = {0};
 
   for(int i = 0; i < 8; i++){
-    i64[i] = static_cast<unsigned char>((value >> (i * 8)) & 0xff);
+    i64[i] = static_cast<uint64_t>((value >> (i * 8)) & 0xff);
+    //i64[i] = static_cast<unsigned char>((value >> (i * 8)) & 0xff);
   }
 
   return i64;
@@ -227,14 +234,14 @@ void C_checksum_lst::recive(int sock){
 void S_checksum_lst::recive(int sock){
 
   auto nf = NetworkFlags::handshake_flag;
+  
 
   if(!nf) return;
 
-  auto _= decode_size(sock);
+  auto t_packet_size= decode_size(sock);
 
   auto num_files = decode_size(sock);
-  std::cout << num_files;
-
+  std::println("Number of files: {0}", num_files);
   for(size_t i = 0; i < num_files; i++){
     auto f_name_len = decode_size(sock);
     if(f_name_len == 0) close(sock);
@@ -246,12 +253,14 @@ void S_checksum_lst::recive(int sock){
 
     auto f_checksum = decode_u64(sock);
 
-    std::cout<<"File: " << i << " " << f_name << " " << f_path << " " << f_checksum;
+    std::println("File: {0} {1}", i, f_checksum);
+
 
     delete [] f_path;
     delete [] f_name;
 
   }
+
   close(sock);
 }
 

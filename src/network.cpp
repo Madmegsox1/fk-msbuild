@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <utility>
@@ -23,13 +24,27 @@ unsigned char NetworkFlags::up_packet[5] = {
 
 void ClientNetworkHandler::init_handshake(){
   flags.handshake_flag = false;
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_port = htons(port);
+
+  connect_socket();
+
+  auto handshake = C_handshake();
+  handshake.send_p(sock);
+  handshake.recive(sock);
+
+  connect_socket();
+
+  auto checksum = C_checksum_lst(fProc);
+  checksum.send_p(sock);
+}
+
+
+void ClientNetworkHandler::connect_socket(){
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     throw std::runtime_error("Failed to create socket");
   }
 
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(port);
-  
   if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
     throw std::runtime_error("Invaild Address");
   }
@@ -37,13 +52,6 @@ void ClientNetworkHandler::init_handshake(){
   if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
       throw std::runtime_error("Connection failed");
   }
-
-  auto handshake = C_handshake();
-  handshake.send_p(sock);
-  handshake.recive(sock);
-
-  auto checksum = C_checksum_lst(fProc);
-  checksum.send_p(sock);
 }
 
 
@@ -103,8 +111,9 @@ void ServerNetworkHandler::s_loop() {
           close(sock);
           continue;
         }
-        std::cout << "opcode: " << packet->opcode;
+        std::cout << "Recived Packet : opcode : " << std::to_string(packet->opcode) << "\n";
         packet->recive(sock);
+        close(sock);
       }
     }
   }
@@ -112,10 +121,10 @@ void ServerNetworkHandler::s_loop() {
 
 void ServerNetworkHandler::register_packets(){
   // Request checksums of files from host
-  auto checksum_ptr = std::make_unique<S_checksum_lst>(fProc);
-  packet_register.push_back(std::move(checksum_ptr));
 
   auto handshake_ptr = std::make_unique<S_handshake>();
   // Handshake packet to check server version
   packet_register.push_back(std::move(handshake_ptr));
+  auto checksum_ptr = std::make_unique<S_checksum_lst>(fProc);
+  packet_register.push_back(std::move(checksum_ptr));
 }
