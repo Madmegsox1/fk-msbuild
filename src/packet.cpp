@@ -56,6 +56,7 @@ size_t Packet::decode_size(int sock) {
 
   return len;
 }
+
 uint64_t Packet::decode_u64(int sock) {
   unsigned char buff[8] = {0};
   long r = read(sock, buff, 8);
@@ -67,10 +68,6 @@ uint64_t Packet::decode_u64(int sock) {
   for(int i = 0; i < 8; i++){
     u64i |= static_cast<uint64_t>(buff[i]) << (8*i);
   }
-
-//  uint64_t u64i = (static_cast<uint64_t>(buff[7] & 0xff) << 56) | (static_cast<uint64_t>(buff[6] & 0xff) << 48) | (static_cast<uint64_t>(buff[5] & 0xff) << 40) | (static_cast<uint64_t>(buff[4] & 0xff) << 32) |
-//                                       ((buff[3] & 0xff) << 24) | ((buff[2] & 0xff) << 16) | ((buff[1] & 0xff) << 8) | (buff[0] & 0xff);
-
 
   return u64i;
 }
@@ -90,7 +87,6 @@ std::array<unsigned char, 8> Packet::encode_u64(uint64_t value){
 
   for(int i = 0; i < 8; i++){
     i64[i] = static_cast<uint64_t>((value >> (i * 8)) & 0xff);
-    //i64[i] = static_cast<unsigned char>((value >> (i * 8)) & 0xff);
   }
 
   return i64;
@@ -213,8 +209,6 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
     auto checksum = encode_u64(file.hash);
     data.insert(data.end(), checksum.begin(), checksum.end());
   }
-
-  std::cout << "SIZE: " << data.size();
 }
 
 S_checksum_lst::S_checksum_lst(FileProccessor fp){
@@ -232,9 +226,7 @@ void C_checksum_lst::recive(int sock){
 
 // Server executes this once C_checksum_lst is recived by server
 void S_checksum_lst::recive(int sock){
-
   auto nf = NetworkFlags::handshake_flag;
-  
 
   if(!nf) return;
 
@@ -242,26 +234,45 @@ void S_checksum_lst::recive(int sock){
 
   auto num_files = decode_size(sock);
   std::println("Number of files: {0}", num_files);
+
+  auto file_refs = std::vector<File>();
+  
   for(size_t i = 0; i < num_files; i++){
     auto f_name_len = decode_size(sock);
     if(f_name_len == 0) close(sock);
+
     unsigned char * f_name = new unsigned char [f_name_len];
+    read(sock, f_name, f_name_len);
+    std::string f_name_str (reinterpret_cast<const char *>(f_name));
 
     auto f_path_len = decode_size(sock);
     if(f_path_len == 0)close (sock);
+
     unsigned char * f_path = new unsigned char [f_name_len];
+    read(sock, f_path, f_path_len);
+    std::string f_path_str (reinterpret_cast<const char *>(f_path));
 
     auto f_checksum = decode_u64(sock);
 
-    std::println("File: {0} {1}", i, f_checksum);
+    auto f = File{.file_name = f_name_str, .local_path = f_path_str, .hash = f_checksum};
 
+    file_refs.push_back(f);
 
     delete [] f_path;
     delete [] f_name;
-
   }
 
   close(sock);
+
+  for (auto remote_files : file_refs){
+    for (auto local_files : fileProc.files){
+      if (remote_files.file_name == local_files.file_name && remote_files.hash != local_files.hash){
+        // compile a list of diffrent files
+        std::println("File with the same name has changes {0}", local_files.file_name);
+      }
+    }
+  }
+
 }
 
 

@@ -80,6 +80,8 @@ void ServerNetworkHandler::init() {
   }
 
   std::cout << "Server Started on port 8090...\n";
+
+  fProc.init_f_scan();
 }
 
 void ServerNetworkHandler::s_loop() {
