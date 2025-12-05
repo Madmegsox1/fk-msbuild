@@ -136,7 +136,8 @@ void S_handshake::recive(int sock){
     }
   }
 
-  delete []  buff;
+  delete [] buff;
+  buff=nullptr;
 
   send_p(sock);
 }
@@ -198,6 +199,9 @@ C_checksum_lst::C_checksum_lst(FileProccessor fp){
   data.insert(data.end(), file_len.begin(), file_len.end());
 
   for(auto file : fp.files){
+    auto file_id = encode_size(file.file_id);
+    data.insert(data.end(), file_id.begin(), file_id.end());
+
     auto file_name_len = encode_size(file.file_name.length());
     data.insert(data.end(), file_name_len.begin(), file_name_len.end());
     data.insert(data.end(), file.file_name.begin(), file.file_name.end());
@@ -222,6 +226,16 @@ void C_checksum_lst::recive(int sock){
 
   if(!nf) return;
 
+  auto _ = decode_size(sock);
+
+  auto num_files = decode_size(sock);
+  std::println("Number of files: {0}", num_files);
+
+  for(size_t i = 0; i < num_files; i++){
+    auto id = decode_size(sock);
+  }
+
+  
 }
 
 // Server executes this once C_checksum_lst is recived by server
@@ -230,14 +244,15 @@ void S_checksum_lst::recive(int sock){
 
   if(!nf) return;
 
-  auto t_packet_size= decode_size(sock);
+  auto _ = decode_size(sock);
 
   auto num_files = decode_size(sock);
   std::println("Number of files: {0}", num_files);
 
-  auto file_refs = std::vector<File>();
-  
   for(size_t i = 0; i < num_files; i++){
+    auto f_id = decode_size(sock);
+
+  
     auto f_name_len = decode_size(sock);
     if(f_name_len == 0) close(sock);
 
@@ -254,26 +269,29 @@ void S_checksum_lst::recive(int sock){
 
     auto f_checksum = decode_u64(sock);
 
-    auto f = File{.file_name = f_name_str, .local_path = f_path_str, .hash = f_checksum};
+    auto f = File{.file_name = f_name_str, .local_path = f_path_str, .file_id = f_id, .hash = f_checksum};
 
-    file_refs.push_back(f);
+    fileProc.remote_files.push_back(f);
 
     delete [] f_path;
     delete [] f_name;
+    f_path = nullptr;
+    f_name = nullptr;
   }
 
   close(sock);
 
-  for (auto remote_files : file_refs){
-    for (auto local_files : fileProc.files){
-      if (remote_files.file_name == local_files.file_name && remote_files.hash != local_files.hash){
-        // compile a list of diffrent files
-        std::println("File with the same name has changes {0}", local_files.file_name);
-      }
-    }
-  }
+  fileProc.f_remote_diff();
 
+  auto len = encode_size(fileProc.diff_files.size());
+  data.insert(data.end(), len.begin(), len .end());
+
+  for(auto diff_file : fileProc.diff_files){
+    auto f_id = encode_size(diff_file.file.file_id);
+    data.insert(data.end(), f_id.begin(), f_id.end());
+  }
 }
+
 
 
 

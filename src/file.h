@@ -17,6 +17,7 @@ constexpr int BUFFER_SIZE = 4096;
 struct File {
   std::string file_name;
   std::string local_path;
+  size_t file_id;
 
   uint64_t hash;
 
@@ -51,12 +52,28 @@ struct File {
 };
 
 
-class FileProccessor{
+enum FILE_DIFF_OPT {
+  EDIT,
+  NEW,
+};
+
+
+struct FileDiff {
+  File file;
+  FILE_DIFF_OPT option;
+};
+
+
+class FileProccessor {
 
   public:
     std::vector<File> files;
+    std::vector<File> remote_files;
+    std::vector<FileDiff> diff_files;
+
     void init_f_scan();
     std::vector<File> f_diff();
+    void f_remote_diff();
 
   private:
 };
