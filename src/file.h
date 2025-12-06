@@ -74,6 +74,7 @@ class FileProccessor {
     void init_f_scan();
     std::vector<File> f_diff();
     void f_remote_diff();
+    File find_file_id(std::vector<File> files, size_t id); 
 
   private:
 };

@@ -1,4 +1,6 @@
 #include "file.h"
+#include <cstddef>
+#include <type_traits>
 #include <vector>
 #include <filesystem>
 
@@ -62,5 +64,13 @@ void FileProccessor::f_remote_diff() {
   }
 
   diff_files = diff;
+}
+
+File FileProccessor::find_file_id(std::vector<File> files, size_t id) {
+  for(auto x : files){
+    if(x.file_id == id) return x;
+  }
+
+  return {.file_name = "", .local_path = "" , .file_id = -1ul , .hash = -1ul};
 }
 

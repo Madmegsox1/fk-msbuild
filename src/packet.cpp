@@ -231,9 +231,18 @@ void C_checksum_lst::recive(int sock){
   auto num_files = decode_size(sock);
   std::println("Number of files: {0}", num_files);
 
+  auto diff_files = std::vector<File>(num_files);
+
   for(size_t i = 0; i < num_files; i++){
     auto id = decode_size(sock);
+    auto file = fileProc.find_file_id(fileProc.files, id);
+
+    if(file.file_id == -1ul && file.hash == -1ul) continue;
+
+    diff_files.push_back(file);
   }
+
+  diff_files.shrink_to_fit();
 
   
 }
